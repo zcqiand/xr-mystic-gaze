@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 3D变换支持 */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* 铜钱组件响应式设计 */
+@media (max-width: 640px) {
+  .coin-container {
+    transform: scale(0.8);
+  }
+}
+
+@media (max-width: 480px) {
+  .coin-container {
+    transform: scale(0.7);
+  }
+}
+
+/* 国风装饰效果 */
+@keyframes bronze-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+  }
+}
+
+.bronze-glow {
+  animation: bronze-glow 3s ease-in-out infinite;
+}
+
+/* 水墨渐显动画 */
+@keyframes ink-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ink-appear {
+  animation: ink-appear 0.8s ease-out forwards;
+}
+
+/* 水墨纹理背景 */
+@keyframes ink-texture {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.ink-texture {
+  background: linear-gradient(45deg,
+      rgba(245, 158, 11, 0.05) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(245, 158, 11, 0.05) 50%,
+      rgba(245, 158, 11, 0.05) 75%,
+      transparent 75%,
+      transparent);
+  background-size: 20px 20px;
+  animation: ink-texture 15s linear infinite;
+}
+
+/* 爻线绘制动画 */
+@keyframes draw-line {
+  from {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 0;
+  }
+}
+
+.draw-line {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-line 1s ease-out forwards;
+}
+
+/* 卦象容器响应式设计 */
+.hexagram-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* 移动设备适配 */
+@media (max-width: 768px) {
+  .hexagram-display {
+    padding: 1rem !important;
+  }
+
+  .hexagram-display svg {
+    width: 60px !important;
+    height: 135px !important;
+  }
+
+  .hexagram-display h3 {
+    font-size: 1.25rem !important;
+  }
+
+  .hexagram-display h4 {
+    font-size: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hexagram-display {
+    padding: 0.75rem !important;
+  }
+
+  .hexagram-display svg {
+    width: 50px !important;
+    height: 112px !important;
+  }
+
+  .hexagram-display h3 {
+    font-size: 1.125rem !important;
+  }
+
+  .hexagram-display h4 {
+    font-size: 0.875rem !important;
+  }
+
+  .hexagram-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+/* 毛玻璃效果 */
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* 宣纸纹理效果 */
+.paper-texture {
+  background:
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #fefefe 0%, #f8f8f8 100%);
+}
+
+/* 毛笔字体样式 */
+.font-serif-chinese {
+  font-family: 'Ma Shan Zheng', serif;
+}
+
+.font-brush {
+  font-family: 'Ma Shan Zheng', cursive;
+}
+
+/* 仿古卷轴边框效果 */
+.scroll-border {
+  position: relative;
+  background: linear-gradient(135deg, #fefefe 0%, #faf8f3 50%, #f5f2e8 100%);
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+}
+
+.scroll-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #d4af37, #f4e04d, #d4af37);
+  border-radius: 8px;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+/* 宣纸纹理增强效果 */
+.paper-texture-enhanced {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 248, 220, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(255, 248, 220, 0.2) 0%, transparent 50%),
+    linear-gradient(135deg, #fefefe 0%, #faf8f3 25%, #f5f2e8 50%, #faf8f3 75%, #fefefe 100%);
+  background-size: 100% 100%, 100% 100%, 40px 40px;
+}
+
+/* 国风装饰元素 */
+.chinese-decoration {
+  position: relative;
+}
+
+.chinese-decoration::before,
+.chinese-decoration::after {
+  content: '❦';
+  position: absolute;
+  color: rgba(212, 175, 55, 0.3);
+  font-size: 1.5rem;
+}
+
+.chinese-decoration::before {
+  top: -10px;
+  left: 10px;
+}
+
+.chinese-decoration::after {
+  bottom: -10px;
+  right: 10px;
+}
