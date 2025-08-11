@@ -380,48 +380,84 @@ export const Interpretation: React.FC<InterpretationProps> = ({
 }) => {
   const [aiInterpretation, setAIInterpretation] = useState<AIInterpretationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // 获取卦象信息
 
   // 生成AI解读
-  useEffect(() => {
-    if (question && hexagram && !isLoading) {
-      console.log('🚀 [AI] 开始生成真实AI解读...');
+  const generateInterpretation = async (isRetry = false) => {
+    if (!question || !hexagram || isLoading) return;
 
+    console.log(`🚀 [AI] ${isRetry ? '重新生成' : '开始生成'}真实AI解读... (尝试次数: ${retryCount + 1})`);
+
+    setIsRegenerating(isRetry);
+    setError(null);
+
+    try {
       // 构建AI请求
       const aiRequest: AIInterpretationRequest = {
         hexagram,
         question
       };
 
-      // 调用真实AI服务
-      generateAIInterpretation(aiRequest)
-        .then(response => {
-          console.log('🎉 [AI] 真实AI解读生成成功');
-          setAIInterpretation(response);
-          setError(null);
-        })
-        .catch((err: unknown) => {
-          console.error('❌ [AI] 真实AI调用失败:', err);
+      console.log('🔍 [DEBUG] AI请求参数:', {
+        question: question.substring(0, 50) + '...',
+        hexagram: {
+          primary: hexagram.primary,
+          changing: hexagram.changing,
+          changingPositions: hexagram.changingPositions
+        }
+      });
 
-          // 如果AI服务失败，回退到本地模拟版本
-          console.log('🔄 [AI] 回退到本地模拟版本...');
-          // 确保hexagram不为null再调用generateLocalAIInterpretation
-          if (hexagram) {
-            generateLocalAIInterpretation(hexagram, question)
-              .then(response => {
-                console.log('✅ [LOCAL] 本地模拟版本生成成功');
-                setAIInterpretation(response);
-                setError('AI服务暂时不可用，已使用本地模拟解读');
-              })
-              .catch((localErr: unknown) => {
-                console.error('❌ [LOCAL] 本地模拟版本也失败:', localErr);
-                setError('生成AI解读时发生错误，请稍后重试');
-              });
-          }
-        });
+      // 调用真实AI服务
+      const response = await generateAIInterpretation(aiRequest);
+
+      console.log('🎉 [AI] 真实AI解读生成成功');
+      setAIInterpretation(response);
+      setError(null);
+      setRetryCount(0);
+    } catch (err: unknown) {
+      console.error('❌ [AI] 真实AI调用失败:', err);
+
+      const errorMessage = err instanceof Error ? err.message : '未知错误';
+      console.error('🔍 [DEBUG] 错误详情:', {
+        errorType: err instanceof Error ? err.constructor.name : typeof err,
+        errorMessage,
+        stack: err instanceof Error ? err.stack : undefined
+      });
+
+      // 如果AI服务失败，回退到本地模拟版本
+      console.log('🔄 [AI] 回退到本地模拟版本...');
+      try {
+        if (hexagram) {
+          const localResponse = await generateLocalAIInterpretation(hexagram, question);
+          console.log('✅ [LOCAL] 本地模拟版本生成成功');
+          setAIInterpretation(localResponse);
+          setError(`AI服务暂时不可用，已使用本地模拟解读 (${errorMessage})`);
+          setRetryCount(0);
+        }
+      } catch (localErr: unknown) {
+        console.error('❌ [LOCAL] 本地模拟版本也失败:', localErr);
+        setError('生成AI解读时发生错误，请稍后重试');
+        setRetryCount(prev => prev + 1);
+      }
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  // 初始生成和重新生成
+  useEffect(() => {
+    if (question && hexagram && !isLoading) {
+      generateInterpretation();
     }
   }, [question, hexagram, isLoading]);
+
+  // 重新生成按钮处理
+  const handleRegenerate = () => {
+    generateInterpretation(true);
+  };
 
 
   return (
@@ -460,6 +496,11 @@ export const Interpretation: React.FC<InterpretationProps> = ({
           <div className="flex items-center mb-4">
             <div className="w-3 h-8 bg-gradient-to-b from-green-600 to-green-800 rounded mr-3"></div>
             <h3 className="text-xl font-bold font-brush text-green-900">AI智能解卦</h3>
+            {error && (
+              <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                本地模拟
+              </span>
+            )}
           </div>
 
           <div className="bg-white/80 rounded-lg p-6 border border-amber-200 space-y-4">
@@ -487,20 +528,39 @@ export const Interpretation: React.FC<InterpretationProps> = ({
         </div>
       )}
 
-      {/* 错误提示 */}
+      {/* 错误提示和重新生成按钮 */}
       {error && (
         <div className="scroll-border paper-texture-enhanced p-6 ink-appear" style={{ animationDelay: '0.8s' }}>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h4 className="text-sm font-medium text-red-800">生成失败</h4>
+                  <p className="text-sm text-red-700">{error}</p>
+                  {retryCount > 0 && (
+                    <p className="text-xs text-red-600 mt-1">重试次数: {retryCount}</p>
+                  )}
+                </div>
               </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-red-800">生成失败</h4>
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+              <button
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="ml-4 px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isRegenerating ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                    重新生成中...
+                  </div>
+                ) : (
+                  '重新生成'
+                )}
+              </button>
             </div>
           </div>
         </div>
