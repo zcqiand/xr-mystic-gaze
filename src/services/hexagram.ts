@@ -63,9 +63,9 @@ export interface HexagramInfo {
 // 单枚铜钱摇卦结果
 function castSingleCoin(): CoinResult {
   const rand = Math.random();
-  if (rand < 0.25) return 0; // 阴爻
-  if (rand < 0.75) return 1; // 阳爻
-  return 2; // 变爻
+  if (rand < 0.25) return 0; // 阴爻 (25%)
+  if (rand < 0.75) return 1; // 阳爻 (50%)
+  return 2; // 变爻 (25%)
 }
 
 // 三枚铜钱同时摇卦
@@ -103,7 +103,8 @@ export function generateHexagram(): HexagramData {
 
     if (yao === 2) {
       // 变爻：在变卦中变为相反的爻
-      changing.push(yaoStatus === 1 ? 0 : 1);
+      const changingYao = yaoStatus === 1 ? 0 : 1;
+      changing.push(changingYao);
       changingPositions.push(i); // 记录变爻位置（0-5，对应第1-6爻）
     } else {
       changing.push(yaoStatus);
