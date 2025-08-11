@@ -1,12 +1,11 @@
 'use client';
 
-import { Coin } from "@/components/divination/Coin";
 import { ShakeSensor } from "@/components/divination/ShakeSensor";
 import { HexagramDisplay } from "@/components/divination/HexagramDisplay";
 import { QuestionForm } from "@/components/divination/QuestionForm";
 import { Interpretation } from "@/components/result/Interpretation";
-import { generateHexagram } from "@/services/hexagram";
 import { useState, useEffect } from "react";
+import { HexagramData } from "@/services/hexagram";
 
 type Step = 'question' | 'divination' | 'result';
 
@@ -14,7 +13,7 @@ export default function Home() {
   // 状态管理
   const [step, setStep] = useState<Step>('question');
   const [question, setQuestion] = useState<string>('');
-  const [hexagramData, setHexagramData] = useState<any>(null);
+  const [hexagramData, setHexagramData] = useState<HexagramData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDeviceSupported, setIsDeviceSupported] = useState(true);
@@ -51,7 +50,7 @@ export default function Home() {
   };
 
   // 处理摇卦完成
-  const handleDivinationComplete = (hexagram: any) => {
+  const handleDivinationComplete = (hexagram: HexagramData) => {
     console.log('[Home Debug] 摇卦完成回调:', { hexagram, currentStep: step });
     setHexagramData(hexagram);
     setStep('result');
@@ -118,6 +117,15 @@ export default function Home() {
         );
 
       case 'result':
+        // 确保hexagramData不为null
+        if (!hexagramData) {
+          return (
+            <div className="text-center text-red-500">
+              错误：卦象数据为空
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-8">
             {/* 卦象展示 */}

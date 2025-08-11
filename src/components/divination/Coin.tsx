@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 
 interface CoinProps {
   status: 'yin' | 'yang' | 'changing';
@@ -57,26 +58,28 @@ export const Coin: React.FC<CoinProps> = ({
 
   // 阳爻图案 - 使用head.webp图片
   const renderYangSymbol = () => (
-    <img
+    <Image
       src="/img/head.webp"
       alt="阳爻"
-      className="w-20 h-20 object-contain drop-shadow-lg"
-      style={{ imageRendering: 'crisp-edges' }}
+      width={80}
+      height={80}
+      className="drop-shadow-lg"
     />
   );
 
   // 阴爻图案 - 使用tail.webp图片
   const renderYinSymbol = () => (
-    <img
+    <Image
       src="/img/tail.webp"
       alt="阴爻"
-      className="w-20 h-20 object-contain drop-shadow-lg"
-      style={{ imageRendering: 'crisp-edges' }}
+      width={80}
+      height={80}
+      className="drop-shadow-lg"
     />
   );
 
   // 铜钱抛掷动画
-  const animateToss = (timestamp: number) => {
+  const animateToss = useCallback((timestamp: number) => {
     if (!startTimeRef.current) {
       startTimeRef.current = timestamp;
     }
@@ -87,7 +90,6 @@ export const Coin: React.FC<CoinProps> = ({
     if (elapsed < duration) {
       // 抛掷轨迹：上升 + 旋转 + 翻转
       const progress = elapsed / duration;
-      const height = Math.sin(progress * Math.PI) * -120; // 增加上升高度到120px
       const rotationX = Math.sin(progress * Math.PI * 3) * 540; // 减少X轴旋转速度和角度
       const rotationY = progress * 1080; // 减少Y轴旋转速度（翻转）
 
@@ -104,7 +106,7 @@ export const Coin: React.FC<CoinProps> = ({
       setIsFlipped(finalStatus === 'yang' || finalStatus === 'changing');
       onShakeComplete?.(finalStatus);
     }
-  };
+  }, [onShakeComplete]);
 
   // 开始摇卦动画
   useEffect(() => {
@@ -114,7 +116,7 @@ export const Coin: React.FC<CoinProps> = ({
       setIsFlipped(false); // 重置为正面
       animationRef.current = requestAnimationFrame(animateToss);
     }
-  }, [isShaking, isAnimating]);
+  }, [isShaking, isAnimating, animateToss]);
 
   // 清理动画
   useEffect(() => {

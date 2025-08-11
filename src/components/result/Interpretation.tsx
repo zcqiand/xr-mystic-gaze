@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { HexagramData, interpretHexagram, getHexagramName } from '@/services/hexagram';
-import { generateAIInterpretation, AIInterpretationRequest, AIServiceError } from '@/services/ai';
+import { HexagramData, interpretHexagram, HexagramInterpretation } from '@/services/hexagram';
+import { generateAIInterpretation, AIInterpretationRequest } from '@/services/ai';
 
 interface InterpretationProps {
-  hexagram: HexagramData;
+  hexagram: HexagramData | null;
   question: string;
   isLoading?: boolean;
   className?: string;
@@ -34,8 +34,6 @@ const generateLocalAIInterpretation = async (
 
   const interpretation = interpretHexagram(hexagram);
   console.log('🔍 [DEBUG] 卦象解读完成:', interpretation);
-  const primaryName = interpretation.primary.name;
-  const changingName = interpretation.changing.name;
   const changingPositions = hexagram.changingPositions.map(pos => pos + 1);
 
   // 分析问题类型
@@ -123,12 +121,19 @@ function analyzeHexagramFeatures(hexagram: HexagramData): {
 
 // 生成个性化解读
 function generatePersonalizedInterpretation(
-  interpretation: any,
+  interpretation: HexagramInterpretation,
   question: string,
   questionType: string,
-  features: any
+  features: {
+    yangCount: number;
+    yinCount: number;
+    changingCount: number;
+    isStable: boolean;
+    isChanging: boolean;
+    element: string;
+  }
 ): string {
-  const { primary, changing } = interpretation;
+  const { primary } = interpretation;
   const baseInterpretation = `${primary.judgment}\n\n${primary.image}`;
 
   // 根据问题类型添加个性化内容
@@ -168,9 +173,16 @@ function generatePersonalizedInterpretation(
 
 // 生成针对性建议
 function generateTargetedAdvice(
-  interpretation: any,
+  interpretation: HexagramInterpretation,
   questionType: string,
-  features: any,
+  features: {
+    yangCount: number;
+    yinCount: number;
+    changingCount: number;
+    isStable: boolean;
+    isChanging: boolean;
+    element: string;
+  },
   changingPositions: number[]
 ): string {
   const { primary, changing } = interpretation;
@@ -196,7 +208,14 @@ function generateTargetedAdvice(
 }
 
 // 获取基础建议
-function getGeneralAdvice(hexagramName: string, features: any): string {
+function getGeneralAdvice(hexagramName: string, features: {
+  yangCount: number;
+  yinCount: number;
+  changingCount: number;
+  isStable: boolean;
+  isChanging: boolean;
+  element: string;
+}): string {
   if (features.element === '阳') {
     return '当前阳气较盛，适合积极主动，勇于开拓新局面。';
   } else if (features.element === '阴') {
@@ -207,7 +226,14 @@ function getGeneralAdvice(hexagramName: string, features: any): string {
 }
 
 // 获取问题类型相关建议
-function getQuestionSpecificAdvice(questionType: string, features: any): string {
+function getQuestionSpecificAdvice(questionType: string, features: {
+  yangCount: number;
+  yinCount: number;
+  changingCount: number;
+  isStable: boolean;
+  isChanging: boolean;
+  element: string;
+}): string {
   switch (questionType) {
     case 'career':
       return `• 在事业发展中，${features.element === '阳' ? '适合主动出击' : '适合稳健经营'}，避免急功近利。\n`;
@@ -237,8 +263,15 @@ function getChangingLineAdvice(changingCount: number, changingName: string): str
 
 // 生成深度分析
 function generateDeepAnalysis(
-  interpretation: any,
-  features: any,
+  interpretation: HexagramInterpretation,
+  features: {
+    yangCount: number;
+    yinCount: number;
+    changingCount: number;
+    isStable: boolean;
+    isChanging: boolean;
+    element: string;
+  },
   changingPositions: number[],
   questionType: string
 ): string {
@@ -294,7 +327,14 @@ function analyzeChangingLines(positions: number[]): string {
 function getComprehensiveAnalysis(
   primaryName: string,
   changingName: string,
-  features: any,
+  features: {
+    yangCount: number;
+    yinCount: number;
+    changingCount: number;
+    isStable: boolean;
+    isChanging: boolean;
+    element: string;
+  },
   questionType: string
 ): string {
   let analysis = '';
@@ -339,14 +379,9 @@ export const Interpretation: React.FC<InterpretationProps> = ({
   className = ''
 }) => {
   const [aiInterpretation, setAIInterpretation] = useState<AIInterpretationResponse | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 获取卦象信息
-  const primaryIndex = parseInt(hexagram.primary.join(''), 2);
-  const changingIndex = parseInt(hexagram.changing.join(''), 2);
-  const primaryNumber = primaryIndex + 1;
-  const changingNumber = changingIndex + 1;
 
   // 生成AI解读
   useEffect(() => {
@@ -366,21 +401,24 @@ export const Interpretation: React.FC<InterpretationProps> = ({
           setAIInterpretation(response);
           setError(null);
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           console.error('❌ [AI] 真实AI调用失败:', err);
 
           // 如果AI服务失败，回退到本地模拟版本
           console.log('🔄 [AI] 回退到本地模拟版本...');
-          generateLocalAIInterpretation(hexagram, question)
-            .then(response => {
-              console.log('✅ [LOCAL] 本地模拟版本生成成功');
-              setAIInterpretation(response);
-              setError('AI服务暂时不可用，已使用本地模拟解读');
-            })
-            .catch(localErr => {
-              console.error('❌ [LOCAL] 本地模拟版本也失败:', localErr);
-              setError('生成AI解读时发生错误，请稍后重试');
-            });
+          // 确保hexagram不为null再调用generateLocalAIInterpretation
+          if (hexagram) {
+            generateLocalAIInterpretation(hexagram, question)
+              .then(response => {
+                console.log('✅ [LOCAL] 本地模拟版本生成成功');
+                setAIInterpretation(response);
+                setError('AI服务暂时不可用，已使用本地模拟解读');
+              })
+              .catch((localErr: unknown) => {
+                console.error('❌ [LOCAL] 本地模拟版本也失败:', localErr);
+                setError('生成AI解读时发生错误，请稍后重试');
+              });
+          }
         });
     }
   }, [question, hexagram, isLoading]);

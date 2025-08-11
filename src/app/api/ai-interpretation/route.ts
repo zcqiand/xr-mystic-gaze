@@ -14,7 +14,7 @@ const openai = new OpenAI({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { question, prompt, hexagram } = body;
+    const { question, prompt } = body;
 
     console.log('🤖 [API] 收到AI解卦请求');
     console.log('🤖 [API] 用户问题:', question);

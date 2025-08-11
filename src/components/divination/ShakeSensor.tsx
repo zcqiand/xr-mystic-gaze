@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { CoinResult, generateHexagram } from '@/services/hexagram';
+import { CoinResult, generateHexagram, HexagramData } from '@/services/hexagram';
 import { Coin } from './Coin';
 
 interface ShakeSensorProps {
   onShakeStart?: () => void;
   onShakeEnd?: (results: CoinResult[]) => void;
   onShakeComplete?: (results: CoinResult[]) => void;
-  onHexagramComplete?: (hexagram: any) => void;
+  onHexagramComplete?: (hexagram: HexagramData) => void;
   className?: string;
   isShaking?: boolean;
   onComplete?: (isComplete: boolean) => void;
@@ -26,10 +26,8 @@ export const ShakeSensor: React.FC<ShakeSensorProps> = ({
   const [isShaking, setIsShaking] = useState(false);
   const [shakeCount, setShakeCount] = useState(0);
   const [currentResults, setCurrentResults] = useState<CoinResult[]>([]);
-  const [totalResults, setTotalResults] = useState<CoinResult[][]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isMotionSupported, setIsMotionSupported] = useState(true);
-  const [shakeThreshold, setShakeThreshold] = useState(15); // 1.5g = 15 m/s²
   const prevExternalIsShaking = useRef(externalIsShaking);
   const lastShakeTime = useRef(0);
   const shakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -42,48 +40,11 @@ export const ShakeSensor: React.FC<ShakeSensorProps> = ({
     }
 
     // 检查是否需要权限
-    if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
+    if (typeof (DeviceMotionEvent as typeof DeviceMotionEvent & { requestPermission?: () => Promise<boolean> }).requestPermission === 'function') {
       setIsMotionSupported(true);
     }
   }, []);
 
-  // 检测设备摇晃
-  const setupShakeDetection = useCallback(() => {
-    if (!isMotionSupported) {
-      console.warn('设备不支持陀螺仪');
-      return;
-    }
-
-    const handleMotion = (event: DeviceMotionEvent) => {
-      console.log('[ShakeSensor Debug] 设备运动事件触发:', { isShaking, isComplete });
-      if (!isShaking || isComplete) return;
-
-      const acceleration = event.accelerationIncludingGravity;
-      if (!acceleration) return;
-
-      const now = Date.now();
-      if (now - lastShakeTime.current < 300) return; // 防抖
-
-      const { x = 0, y = 0, z = 0 } = acceleration;
-      // 计算加速度大小（减去重力加速度）
-      const accelerationMagnitude = Math.sqrt(
-        Math.abs(x || 0) ** 2 +
-        Math.abs(y || 0) ** 2 +
-        Math.abs(z || 0) ** 2
-      ) - 9.8; // 减去重力加速度
-
-      console.log('[ShakeSensor Debug] 加速度计算:', { x, y, z, accelerationMagnitude, threshold: shakeThreshold });
-
-      if (accelerationMagnitude > shakeThreshold) {
-        lastShakeTime.current = now;
-        console.log('[ShakeSensor Debug] 触发摇卦');
-        handleShake();
-      }
-    };
-
-    window.addEventListener('devicemotion', handleMotion);
-    return () => window.removeEventListener('devicemotion', handleMotion);
-  }, [isShaking, isComplete, isMotionSupported, shakeThreshold]);
 
   // 处理摇晃事件
   const handleShake = useCallback(() => {
@@ -132,7 +93,7 @@ export const ShakeSensor: React.FC<ShakeSensorProps> = ({
         return newCount;
       });
     }, 1000);
-  }, [shakeCount, onShakeComplete, onShakeEnd, onHexagramComplete]);
+  }, [shakeCount, onShakeComplete, onShakeEnd, onHexagramComplete, onComplete]);
 
   // 手动摇卦按钮
   const handleManualShake = useCallback(() => {
@@ -151,12 +112,49 @@ export const ShakeSensor: React.FC<ShakeSensorProps> = ({
     }, 500);
   }, [isShaking, isComplete, onShakeStart, handleShake]);
 
+  // 检测设备摇晃
+  const setupShakeDetection = useCallback(() => {
+    if (!isMotionSupported) {
+      console.warn('设备不支持陀螺仪');
+      return;
+    }
+
+    const handleMotion = (event: DeviceMotionEvent) => {
+      console.log('[ShakeSensor Debug] 设备运动事件触发:', { isShaking, isComplete });
+      if (!isShaking || isComplete) return;
+
+      const acceleration = event.accelerationIncludingGravity;
+      if (!acceleration) return;
+
+      const now = Date.now();
+      if (now - lastShakeTime.current < 300) return; // 防抖
+
+      const { x = 0, y = 0, z = 0 } = acceleration;
+      // 计算加速度大小（减去重力加速度）
+      const accelerationMagnitude = Math.sqrt(
+        Math.abs(x || 0) ** 2 +
+        Math.abs(y || 0) ** 2 +
+        Math.abs(z || 0) ** 2
+      ) - 9.8; // 减去重力加速度
+
+      console.log('[ShakeSensor Debug] 加速度计算:', { x, y, z, accelerationMagnitude });
+
+      if (accelerationMagnitude > 15) { // 1.5g = 15 m/s²
+        lastShakeTime.current = now;
+        console.log('[ShakeSensor Debug] 触发摇卦');
+        handleShake();
+      }
+    };
+
+    window.addEventListener('devicemotion', handleMotion);
+    return () => window.removeEventListener('devicemotion', handleMotion);
+  }, [isShaking, isComplete, isMotionSupported, handleShake]);
+
   // 重置摇卦
   const resetShake = useCallback(() => {
     setIsShaking(false);
     setShakeCount(0);
     setCurrentResults([]);
-    setTotalResults([]);
     setIsComplete(false);
     onComplete?.(false);
     if (shakeTimeoutRef.current) {
@@ -176,7 +174,7 @@ export const ShakeSensor: React.FC<ShakeSensorProps> = ({
         prevExternalIsShaking.current = externalIsShaking;
       });
     }
-  }, [externalIsShaking]);
+  }, [externalIsShaking, isShaking]);
 
   // 设置摇晃检测
   useEffect(() => {

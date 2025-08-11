@@ -4,10 +4,7 @@ import {
   validateHexagram,
   getHexagramName,
   getHexagramDescription,
-  YaoStatus,
-  CoinResult,
   HexagramData,
-  HexagramInterpretation
 } from './hexagram';
 
 describe('Hexagram Service', () => {
@@ -98,10 +95,10 @@ describe('Hexagram Service', () => {
         changing: [1, 0, 1, 0, 1, 0],
         changingPositions: [],
         timestamp: Date.now()
-      } as any;
+      } as HexagramData & { primary: number[] };
 
       // 修改其中一个值为无效值
-      invalidHexagram.primary[1] = 2;
+      (invalidHexagram.primary as number[])[1] = 2;
 
       expect(validateHexagram(invalidHexagram)).toBe(false);
     });

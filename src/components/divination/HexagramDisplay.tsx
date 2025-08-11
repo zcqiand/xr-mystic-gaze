@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getHexagramName } from '@/services/hexagram';
+import { getHexagramName, YaoStatus } from '@/services/hexagram';
 
 interface HexagramDisplayProps {
   primaryHexagram: number[]; // 主卦数据（数组[6]）
@@ -135,28 +135,19 @@ export const HexagramDisplay: React.FC<HexagramDisplayProps> = ({
   changingNumber,
   className = ''
 }) => {
-  const [isAnimating, setIsAnimating] = useState(true);
 
-  useEffect(() => {
-    // 动画完成后重置
-    const timer = setTimeout(() => {
-      setIsAnimating(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [primaryHexagram, changingHexagram]);
 
   // 如果没有提供卦名，自动计算
   const resolvedPrimaryName = primaryName || getHexagramName({
-    primary: primaryHexagram as any,
-    changing: changingHexagram as any,
+    primary: primaryHexagram as YaoStatus[],
+    changing: changingHexagram as YaoStatus[],
     changingPositions: changingLines,
     timestamp: Date.now()
   });
 
   const resolvedChangingName = changingName || getHexagramName({
-    primary: changingHexagram as any,
-    changing: primaryHexagram as any,
+    primary: changingHexagram as YaoStatus[],
+    changing: primaryHexagram as YaoStatus[],
     changingPositions: [],
     timestamp: Date.now()
   });
